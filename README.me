@@ -1,0 +1,74 @@
+# Liste des endpoints
+- /cars : Liste des voitures disponibles
+- /car/{slug} : Une seule voiture avec son slug (composé de l'ID + le nom)
+- /cars/brand/{slug} : Liste des voitures de la marque (slug de la marque)
+- /cars/category/{slug} : Liste des voitures selon la catégorie
+
+- /categories : Liste des catégories (Berline / Break / SUV ...)
+- /brands : Liste des marques
+
+
+# Liste des paramètres
+- /cars/
+  - ?energy=essence
+    - =hybride-essence
+    - =hybride-diesel
+    - =electric
+    - =GPL
+    - =diesel
+  - ?boite=manuelle
+    - =auto
+    - =semi-auto
+  - ?color=red
+    - =black
+  - ?door=2
+    - =3
+    - =4
+    - =5
+
+# Liste des tables DB
+- brands
+- models : id_model, brand_id, name, phase, syear, eyear, finition, hp, cv, door,
+ attribute_energy_id, attribute_boite_id, attribute_category_id
+- attributes : id_attribute, key_attribute, value_attribute
+  - Exemple 1 : 1,ENERGY,DIESEL
+  - Exemple 2 : 2,COLOR,BLACK
+  - Exemple 3 : 3,BOITE,AUTO
+  - Exemple 4 : 4,CATEGORY,SUV
+- cars : id_car, name, slug, description, first_immat_date, model_id, aff_price, sell_price,
+ attribute_color_id, siv, etat, km, in_date, out_date
+- images : id_image, car_id, url, order
+
+
+
+INSERT INTO models (brand_id, model_name, model_slug, model_finition, model_hp, model_attribute_energy_id, model_attribute_boite_id, model_start_date,model_end_date) 
+SELECT DISTINCT 
+	brands.id_brand AS brand_id
+    , SUBSTRING(IdentificationID, LOCATE(' ', IdentificationID)+1) AS model_name
+	, replace(lower(SUBSTRING(IdentificationID, LOCATE(' ', IdentificationID)+1)), ' ', '-') AS model_slug
+    , Engine_InformationEngine_Type AS model_finition
+    , Engine_InformationEngine_StatisticsHorsepower AS model_hp
+    , attr_energy.id_attribute AS model_attribute_energy_id
+    , attr_boite.id_attribute AS model_attribute_boite_id
+	, CONCAT((SELECT MIN(sub.IdentificationYear) FROM supercarmarket.imported AS sub
+    WHERE sub.Engine_InformationEngine_Type = Engine_InformationEngine_Type), '-01-01') AS model_start_date
+	, CONCAT((SELECT MAX(sub.IdentificationYear) FROM supercarmarket.imported AS sub
+    WHERE sub.Engine_InformationEngine_Type = Engine_InformationEngine_Type), '-12-31') AS model_end_date
+
+FROM supercarmarket.imported
+LEFT JOIN supercarmarket.brands ON brand_name = imported.IdentificationMake
+LEFT JOIN supercarmarket.attributes AS attr_energy ON attr_energy.attribute_key = 'ENERGY' AND attr_energy.attribute_value = Fuel_InformationFuel_Type
+LEFT JOIN supercarmarket.attributes AS attr_boite ON attr_boite.attribute_key = 'BOITE' AND attr_boite.attribute_value = replace(IdentificationClassification, ' transmission', '')
+ORDER BY model_name, model_finition;
+
+
+
+Partie USER
+
+créer table users (id, lastname, firstname, role(1.2.3), apikey)
+apikey = 41 caractères VARCHAR SHA1 (encodage)
+même manière création newCar, apikey = apikey / create
+role = 1 pour créer voiture
+
+
+Lecture (vérif si apikey existe sinon :P)
